@@ -1,0 +1,254 @@
+\documentclass[a4paper, 11pt]{article}
+
+%%% Packages
+\usepackage[margin=50pt, vmargin={50pt, 10pt},includefoot]{geometry}
+\usepackage{palatino}
+
+%%% Listing package
+\usepackage{listings}
+\usepackage{color}
+\usepackage{url}
+\usepackage{hyperref}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{ 
+  language=C++,                % the language of the code
+  basicstyle=\footnotesize,           % the size of the fonts that are used for the code
+  numbers=left,                   % where to put the line-numbers
+  numberstyle=\tiny\color{gray},  % the style that is used for the line-numbers
+  stepnumber=0,                   % the step between two line-numbers. If it's 1, each line 
+  numbersep=5pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},      % choose the background color. You must add \usepackage{color}
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  frame=single,                   % adds a frame around the code
+  rulecolor=\color{black},        % if not set, the frame-color 
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=false,        %sets if automatic breaks should only happen at whitespace
+  title=\lstname,                   % show the filename of files included with \lstinputlisting;
+  keywordstyle=\color{blue},         % keyword style
+  commentstyle=\color{dkgreen},       %comment style
+  stringstyle=\color{mauve},         %string literal style
+  escapeinside={\%*}{*)},            % if you want to add LaTeX within your code
+  morekeywords={*,...},               % if you want to add more keywords to the set
+  emph={remove,from,for_each, map, string},  % emphasized characters
+  emphstyle={\color{blue}}
+}
+
+%%% End listing
+
+\begin{document}
+\title{Artificial Intelligence Report 3rd Week-6th Problem}
+\author{Le Kien Trung \\ 03-120291, Department of Mechano-Informatics}
+\date{November 17th, 2012}
+\maketitle
+\begin{itemize}
+\item This is the right version of 6th problem. The report I sent on October 29 was a wrong one. Please ignore that!!!
+\item The cryptarithmetic program also solves the 12th problem (when * and digit are taken into account)
+\item The 1st week report file was AI\_120291\_01.pdf, but in fact, it was about the 2nd problem. Sorry for inconvenience.
+\item Source files: nqueen.hpp, nqueen.cpp, cryptarithmetic.hpp, cryptarithmetic.cpp, backtrack.hpp, Makefile
+\item Programs are tested on Ubuntu 32/64 bit.
+\end{itemize}
+
+\section{Backtrack class}
+In the previous report, I wrote about Truth Maintenance System (TMS) and the theoretical procedure to use Backtracking, an implementation of TMS, to solve Constraints Satisfaction Problems(CSPs). The pseudo code for Backtracking algorithm can be written as following ~\ref{itm:AIMA}.
+\lstset{language=sh,caption={Backtrack Pseudo Code}}
+\begin{lstlisting}
+function BACKTRACKING-SEARCH(CSP)
+	return RECURSIVE-BACKTRACKING ({ }, csp)
+
+function RECURSIVE-BACKTRACKING(csp)
+	if assignment is complete then return assignment
+	var <-- SELECT-UNASSIGNED-VARIABLE(VARIABLE[csp], assignment, csp)
+	for_each value in ORDER-DOMAIN-VALUES (var, assignment, csp) do
+		if value is consistent with assignment according to CONSTRAINT[csp] then
+			add (var = value) to assignment
+			result <- RECURSIVE-BACKTRACKING(assignment, csp)
+			if result is not failure then return result
+			remove (var = value) from assignment
+	return failure
+\end{lstlisting}
+In order to solve CSPs such as Cryptarithmetic and N Queens, I created the Backtrack class in C++ as following.
+\lstset{language=C++, caption={Backtrack Interface (backtrack.hpp)}}
+\lstinputlisting[firstline=4, lastline=50]{backtrack.hpp}
+
+Backtracking algorithm can be used to solve all CSPs by rewriting the four virtual methods.
+
+\newpage
+\section{NQueen class}
+The N Queens problem is represented as following: 
+\lstset{language=C++, caption={Data structure for N Queens (nqueen.hpp)}}
+\lstinputlisting[linerange={19-23}]{nqueen.hpp}
+
+\begin{itemize}
+\item Recursive Backtracking is computationally expensive, so N Queen with N $>$ 15 will not be considered. 
+\item Index of data[] represents \#row, value of data[] represents \#column. Place a queen in to (4,5) means data[4]=5. This representation is much more efficient than to use NxN matrix, because the it already assumes all the queens must be on different rows, which reduces the number of constraints to check.
+\item Constraints are represented by three boolean array column[], leftDiagonal[] and rightDiagonal[]. There are N, 2*N-1, 2*N-1 number of columns, left diagonals and right diagonals on a NxN chess board, respectively. The constraint of N Queens problem is that no queen can attack another, namely, two arbitrary pair of queens must lay on different rows, columns, left and right diagonals. That is why methods inherited from Backtrack classes are implemented as following:
+\lstset{language=C++, caption={Implementation of Backtrack class methods (nqueen.cpp)}}
+\lstinputlisting[linerange={19-34}]{nqueen.cpp}
+  Using those arrays to represent constraints helps the program run faster and the algorithm look cleaner. There is other way to update and restore consistency, such as everytime a new queen is placed, check if it can attack another queen by comparing their positions. That way should work just fine, but slower.
+
+\item The last thing I want to mention is about the symmetry of N Queens solutions. In my code, I only use one symmetric property, which makes my code run twice fater than the normal one. Actually, solutions of N Queens problem holds much more symmetric properties, if all of them are used, we can expect faster running time of the program. Details about this topic can be found in ~\ref{itm:symmetry}.
+\end{itemize}
+
+\newpage
+Here is the running result:
+
+\begin{verbatim}
+@:~/backtrack$ make
+g++    -c -o nqueen.o nqueen.cpp
+g++ -o nqueen nqueen.o -lm
+@:~/backtrack$ ./nqueen 10
+#1:
+Q * * * * * * * * * 
+* * Q * * * * * * * 
+* * * * * Q * * * * 
+* * * * * * * Q * * 
+* * * * * * * * * Q 
+* * * * Q * * * * * 
+* * * * * * * * Q * 
+* Q * * * * * * * * 
+* * * Q * * * * * * 
+* * * * * * Q * * * 
+#2:
+* * * * * * * * * Q 
+* * * * * * * Q * * 
+* * * * Q * * * * * 
+* * Q * * * * * * * 
+Q * * * * * * * * * 
+* * * * * Q * * * * 
+* Q * * * * * * * * 
+* * * * * * * * Q * 
+* * * * * * Q * * * 
+* * * Q * * * * * * 
+
+..................
+
+#724:
+* * * * * Q * * * * 
+Q * * * * * * * * * 
+* * Q * * * * * * * 
+* * * * * * * * * Q 
+* * * * * * * Q * * 
+* Q * * * * * * * * 
+* * * Q * * * * * * 
+* * * * * * * * Q * 
+* * * * * * Q * * * 
+* * * * Q * * * * * 
+Execution's time: 0.04 (s)
+\end{verbatim}
+
+\newpage
+\section{Cryptarithmetic class}
+Cryptarithmetic also known as verbal arithmetic, is a type of mathematical game consisting of a mathematical equation among unknown numbers, whose digits are represented by letters. The goal is to identify the value of each letter ~\ref{itm:wiki}. Data structure of this problem:
+\lstset{language=C++,caption={Data structure for Cryptarithmetic (cryptarithmetic.hpp)}}
+\lstinputlisting[firstline=21, lastline=27]{cryptarithmetic.hpp}
+
+The efficiency of Backtracking algorithm can be measured by the number of conducted assignment. While there are 10!=3628800 map values permutations of 10 different characters, backtracking algorithm reduces that number significantly in this problem. Consider our traditional example:
+\begin{center} send + more = money \end{center}
+This is a demonstration of how backtracking algorithm works. I started assign variables from left to right, top to down. In this example, the string \textbf{var=\$msoenrdy}. This proves to be more efficient because the first character, m in this case, has very few possible values. In order to show assigments, please uncomment lines: 88,89,93,101 in cryptarithmetic.cpp.
+\begin{verbatim}
++1: m	<<---1      (Assign)
++2: s	<<---0
+-1: s--->>	0   (Unassign)
++3: s	<<---2
+-2: s--->>	2
+
+.................
+
++46: d	<<---4
+-40: d--->>	4
++47: d	<<---7
++48: y	<<---2
+m --> 1
+s --> 9
+o --> 0
+e --> 5
+n --> 6
+r --> 8
+d --> 7
+y --> 2
+9567 + 1085 = 10652
+-41: y--->>	2
+
+.................
+
+-57: s--->>	9
+-58: m--->>	1
+\end{verbatim}
+The problems are solve after 58 times of assigments, which is very efficient. I do not use carry as direct variables. The constraints are checked forward from left to right. When the \#i constraint is checked, carry[i] and carry[i+1] are assigned. If the assignment of carry[i] with \#i constraint is violated with its assigment with \#(i-1) constraint, constradictory occurs. The next listing shows how the IsValid(int,int) is implemented in cryptarithmetic:
+
+\lstset{caption={IsValid(int, int) method implementation (cryptarithmetic.cpp)}}
+\lstinputlisting[linerange={108-135,137-137,147-193}]{cryptarithmetic.cpp}
+
+Here is the running result.
+\begin{verbatim}
+@:~/Backtrack$ make
+g++    -c -o cryptarithmetic.o cryptarithmetic.cpp
+g++ -o cryptarithmetic cryptarithmetic.o -lm
+@:~/Backtrack$ ./cryptarithmetic donald gerald robert
+#1:
+d --> 5
+g --> 1
+r --> 7
+o --> 2
+e --> 9
+n --> 6
+b --> 3
+a --> 4
+l --> 8
+t --> 0
+526485 + 197485 = 723970
+Number of solutions 1
+Number of assigments:3026
+Execution's time: 0.03 (s)
+@:~/Backtrack$ ./cryptarithmetic *boc abac 1a7cc
+#1:
+* --> 9
+a --> 4
+b --> 8
+o --> 6
+c --> 0
+9860 + 4840 = 14700
+#2:
+* --> 9
+a --> 6
+b --> 8
+o --> 4
+c --> 0
+9840 + 6860 = 16700
+Number of solutions 2
+Number of assigments:67
+Execution's time: 0 (s)
+\end{verbatim}
+
+\newpage
+\section{Conclustion}
+Backtracking is very simple and straight forward algorithm, which can solve most of CSPs problems. I presented two examples, Nqueen and Cryptarithmetic here, but there are a lot more problems can be solved by this method, such as Maze, Sudoku. However, Backtracking has a flaw, its high complexity, because of recursion. For example, in N queens problems, if N=30, Backtrack cannot find any solution. In cases like that, we need more suitable algorithms such as Hill Climbing, Simulated Annealing or Genetic Algorithm.
+
+\begin{thebibliography}{9}
+\bibitem{AIMA}
+  \label{itm:AIMA}
+  Stuart Russell, Peter Norvig
+  \emph{  Aritifical Intelligence A Modern Approach}
+  Prentice Hall
+  3nd Edition,
+  December 2009
+
+\bibitem{NQUEEN_REF_LINK}
+  \label{itm:symmetry}
+  \url{http://csc.columbusstate.edu/bosworth/SearchProblems/N_Queens.htm}
+
+\bibitem{WIKI}
+  \label{itm:wiki}
+  \url{http://en.wikipedia.org/wiki/Constraint_satisfaction_problem} \\
+  \url{http://en.wikipedia.org/wiki/Verbal_arithmetic}
+
+\end{thebibliography}
+
+\end{document}
