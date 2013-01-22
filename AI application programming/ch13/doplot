@@ -1,0 +1,4 @@
+set title "Fuzzy Memberships"
+plot 'data.out' using 1:2 t "Low" with linespoints \
+, 'data.out' using 1:3 t "High" with linespoints
+pause -1
